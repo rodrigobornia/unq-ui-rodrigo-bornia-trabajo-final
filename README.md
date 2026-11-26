@@ -1,16 +1,23 @@
-# React + Vite
+# Palabras Encadenadas — Trabajo Final Integrador (UIs - UNQ)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplicación web desarrollada en **React** para el Trabajo Final Integrador de la materia **Construcción de Interfaces de Usuario (UNQ - 2°C 2026)**.
 
-Currently, two official plugins are available:
+## Descripción del juego
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+El objetivo es formar la cadena más larga posible de palabras válidas en español antes de que se agote el tiempo:
 
-## React Compiler
+- Cada turno dura **15 segundos** y comienza al ingresar la primera palabra válida.
+- Cada palabra nueva debe empezar con la **última letra** de la palabra anterior, no haberse utilizado previamente en la partida y existir en el diccionario español.
+- Cada letra de una palabra válida suma **1 punto** y reinicia el temporizador a 15 segundos.
+- Al finalizar la partida se muestra el resumen (palabras encadenadas y puntaje final), un ranking local con los **10 mejores puntajes** y la posibilidad de iniciar una nueva partida.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Requisitos previos
 
-## Expanding the ESLint configuration
+- [Node.js](https://nodejs.org/) (versión 18 o superior)
+- npm (incluido con Node.js)
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Cómo descargar e instalar el proyecto
+
+1. Clonar el repositorio:
+   ```bash
+   git clone [https://github.com/rodrigobornia/unq-ui-rodrigo-bornia-trabajo-final.git](https://github.com/rodrigobornia/unq-ui-rodrigo-bornia-trabajo-final.git)
