@@ -1,122 +1,145 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useState, useEffect, useRef } from 'react';
+import { validateWordInDictionary } from './services/wordService';
+import {
+  normalizeWord,
+  getLastLetter,
+  isAlreadyUsed,
+  isValidChain,
+  calculateWordScore,
+} from './utils/gameUtils';
+import { getLeaderboard, saveScoreToLeaderboard } from './utils/leaderboardUtils';
+import { GameHeader } from './components/GameHeader';
+import { WordInputForm } from './components/WordInputForm';
+import { WordChain } from './components/WordChain';
+import { GameOverPanel } from './components/GameOverPanel';
+import './App.css';
+
+const TURN_DURATION = 15;
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [chain, setChain] = useState([]);
+  const [timeLeft, setTimeLeft] = useState(TURN_DURATION);
+  const [hasStarted, setHasStarted] = useState(false);
+  const [turnKey, setTurnKey] = useState(0);
+  const [isValidating, setIsValidating] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [leaderboard, setLeaderboard] = useState(() => getLeaderboard());
+
+  const isGameOver = hasStarted && timeLeft === 0;
+  const isGameOverRef = useRef(isGameOver);
+
+  useEffect(() => {
+    isGameOverRef.current = isGameOver;
+  }, [isGameOver]);
+
+  const score = chain.reduce((total, word) => total + calculateWordScore(word), 0);
+  const lastWord = chain.length > 0 ? chain[chain.length - 1] : null;
+  const requiredLetter = lastWord ? getLastLetter(lastWord) : null;
+
+  useEffect(() => {
+    if (!hasStarted || timeLeft === 0) return;
+
+    const timerId = setTimeout(() => {
+      if (timeLeft === 1) {
+        setLeaderboard(saveScoreToLeaderboard({ score, wordsCount: chain.length }));
+      }
+      setTimeLeft((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearTimeout(timerId);
+  }, [hasStarted, timeLeft, turnKey, score, chain.length]);
+
+  const handleWordSubmit = async (rawWord) => {
+    if (isGameOver || isValidating) return false;
+
+    const word = normalizeWord(rawWord);
+    if (!word) return false;
+
+    if (isAlreadyUsed(word, chain)) {
+      setErrorMessage('La palabra ya fue utilizada.');
+      return false;
+    }
+
+    if (!isValidChain(lastWord, word)) {
+      setErrorMessage('La palabra no respeta la regla de encadenamiento.');
+      return false;
+    }
+
+    setIsValidating(true);
+    setErrorMessage('');
+
+    try {
+      const exists = await validateWordInDictionary(word);
+
+      if (isGameOverRef.current) return false;
+
+      if (!exists) {
+        setErrorMessage('La palabra no existe.');
+        return false;
+      }
+
+      setChain((prev) => [...prev, word]);
+      setHasStarted(true);
+      setTimeLeft(TURN_DURATION);
+      setTurnKey((prev) => prev + 1);
+      return true;
+    } catch {
+      setErrorMessage('No se pudo conectar con el diccionario. Intentá nuevamente.');
+      return false;
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
+  const handleRestart = () => {
+    setChain([]);
+    setTimeLeft(TURN_DURATION);
+    setHasStarted(false);
+    setTurnKey(0);
+    setIsValidating(false);
+    setErrorMessage('');
+  };
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <main className="app-container">
+      <div className="title-block">
+        <h1>Palabras Encadenadas</h1>
+        <p className="subtitle">
+          Encadená palabras válidas en español usando la última letra de la anterior.
+        </p>
+      </div>
 
-      <div className="ticks"></div>
+      <GameHeader
+        score={score}
+        timeLeft={timeLeft}
+        hasStarted={hasStarted}
+        requiredLetter={requiredLetter}
+      />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      {!isGameOver ? (
+        <>
+          <WordInputForm
+            onSubmitWord={handleWordSubmit}
+            disabled={isGameOver}
+            isValidating={isValidating}
+            errorMessage={errorMessage}
+            requiredLetter={requiredLetter}
+          />
+          <WordChain chain={chain} />
+        </>
+      ) : (
+        <>
+          <GameOverPanel
+            score={score}
+            wordsCount={chain.length}
+            leaderboard={leaderboard}
+            onRestart={handleRestart}
+          />
+          <WordChain chain={chain} />
+        </>
+      )}
+    </main>
+  );
 }
 
-export default App
+export default App;
